@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>7-Letter Wordle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0e7ff, #f3e8ff);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 3em;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 1px;
+        }
+
+        .game-container {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .guess-row {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .letter {
+            width: 55px;
+            height: 55px;
+            margin: 5px;
+            border: 3px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .letter.correct {
+            background-color: #48bb78;
+            border-color: #48bb78;
+            color: white;
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 4px 8px rgba(72,187,120,0.3);
+        }
+
+        .letter.present {
+            background-color: #ecc94b;
+            border-color: #ecc94b;
+            color: white;
+            transform: scale(1.05) rotate(-2deg);
+            box-shadow: 0 4px 8px rgba(236,201,75,0.3);
+        }
+
+        .letter.absent {
+            background-color: #718096;
+            border-color: #718096;
+            color: white;
+            box-shadow: 0 2px 4px rgba(113,128,150,0.2);
+        }
+
+        #input {
+            width: 320px;
+            padding: 12px 15px;
+            font-size: 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin: 20px 0;
+            outline: none;
+            background: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #input:focus {
+            border-color: #48bb78;
+            box-shadow: 0 0 8px rgba(72,187,120,0.3);
+        }
+
+        #keyboard {
+            margin: 25px 0;
+            max-width: 650px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0;
+        }
+
+        .key {
+            padding: 16px 22px;
+            margin: 4px;
+            background-color: #e2e8f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .key:hover:not(:disabled) {
+            background-color: #cbd5e0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #message {
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            min-height: 28px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            background-color: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(72,187,120,0.3);
+            font-weight: 600;
+        }
+
+        button:hover {
+            background-color: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(72,187,120,0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(72,187,120,0.2);
+        }
+
+        @keyframes flip {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0); }
+        }
+
+        .letter.flipping {
+            animation: flip 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>7-Letter Wordle</h1>
+    <div class="game-container" id="game"></div>
+    <input type="text" id="input" maxlength="7" placeholder="Type your guess">
+    <div id="keyboard"></div>
+    <div id="message"></div>
+    <button onclick="startGame()">New Game</button>
+
+    <script>
+        const WORDS = [
+            "awesome", "bravery", "capture", "dancing", "explore", "fantasy", "glimpse",
+            "harmony", "imagine", "justice", "kingdom", "liberty", "miracle", "natural",
+            "oceanic", "pacific", "quality", "respect", "silence", "triumph", "victory",
+            "wisdoms", "zealous", "academy", "balance", "careful", "delight", "emerald",
+            "freedom", "gallery", "holiday", "journey", "kestrel", "luminous", "mystics",
+            "natures", "origins", "paradox", "quested", "rainbow", "savored", "tempest",
+            "uniques", "vibrant", "wonders", "yearned", "zodiacs", "barrier", "cascade",
+            "destiny", "enjoyed", "flavors", "glories", "heavens", "ignored", "juniper",
+            "legends", "marvels", "nomadic", "optimum", "prelude", "quirked", "rhythms",
+            "spirits", "thunder", "uniform", "voyages", "whisper", "youthful", "zealots"
+        ];
+
+        const MAX_ATTEMPTS = 7;
+        let currentAttempt = 0;
+        let targetWord = '';
+        let gameOver = false;
+
+        function startGame() {
+            currentAttempt = 0;
+            gameOver = false;
+            targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            document.getElementById('message').textContent = '';
+            document.getElementById('input').value = '';
+            document.getElementById('input').disabled = false;
+            createGameBoard();
+            createKeyboard();
+            resetKeyboard();
+        }
+
+        function createGameBoard() {
+            const game = document.getElementById('game');
+            game.innerHTML = '';
+            for (let i = 0; i < MAX_ATTEMPTS; i++) {
+                const row = document.createElement('div');
+                row.className = 'guess-row';
+                for (let j = 0; j < 7; j++) {
+                    const letter = document.createElement('div');
+                    letter.className = 'letter';
+                    row.appendChild(letter);
+                }
+                game.appendChild(row);
+            }
+        }
+
+        function createKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+            const layout = [
+                'qwertyuiop',
+                'asdfghjkl',
+                'zxcvbnm'
+            ];
+            layout.forEach(row => {
+                const keyRow = document.createElement('div');
+                keyRow.className = 'key-row';
+                row.split('').forEach(letter => {
+                    const key = document.createElement('button');
+                    key.className = 'key';
+                    key.textContent = letter;
+                    key.onclick = () => document.getElementById('input').value += letter;
+                    keyRow.appendChild(key);
+                });
+                keyboard.appendChild(keyRow);
+            });
+        }
+
+        function resetKeyboard() {
+            document.querySelectorAll('.key').forEach(key => {
+                key.style.backgroundColor = '#e2e8f0';
+            });
+        }
+
+        function updateKeyboard(guess, feedback) {
+            guess.split('').forEach((letter, i) => {
+                const key = Array.from(document.querySelectorAll('.key'))
+                    .find(k => k.textContent === letter);
+                if (feedback[i] === 'correct') {
+                    key.style.backgroundColor = '#48bb78';
+                } else if (feedback[i] === 'present' && key.style.backgroundColor !== '#48bb78') {
+                    key.style.backgroundColor = '#ecc94b';
+                } else if (feedback[i] === 'absent' && key.style.backgroundColor === '#e2e8f0') {
+                    key.style.backgroundColor = '#718096';
+                }
+            });
+        }
+
+        function checkGuess(guess) {
+            const feedback = [];
+            const targetArray = targetWord.split('');
+            const guessArray = guess.split('');
+
+            guessArray.forEach((letter, i) => {
+                if (letter === targetArray[i]) {
+                    feedback[i] = 'correct';
+                    targetArray[i] = null;
+                    guessArray[i] = null;
+                }
+            });
+
+            guessArray.forEach((letter, i) => {
+                if (letter && targetArray.includes(letter)) {
+                    feedback[i] = 'present';
+                    targetArray[targetArray.indexOf(letter)] = null;
+                } else if (!feedback[i]) {
+                    feedback[i] = 'absent';
+                }
+            });
+
+            return feedback;
+        }
+
+        function updateBoard(guess, feedback) {
+            const row = document.getElementsByClassName('guess-row')[currentAttempt];
+            const letters = row.getElementsByClassName('letter');
+            guess.split('').forEach((letter, i) => {
+                setTimeout(() => {
+                    letters[i].textContent = letter;
+                    letters[i].classList.add('flipping');
+                    setTimeout(() => {
+                        letters[i].classList.remove('flipping');
+                        letters[i].classList.add(feedback[i]);
+                    }, 250);
+                }, i * 100);
+            });
+        }
+
+        document.getElementById('input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !gameOver) {
+                const guess = e.target.value.toLowerCase();
+                if (guess.length !== 7) {
+                    document.getElementById('message').textContent = 'Please enter a 7-letter word!';
+                    return;
+                }
+                if (!WORDS.includes(guess)) {
+                    document.getElementById('message').textContent = 'Not in word list!';
+                    return;
+                }
+
+                const feedback = checkGuess(guess);
+                updateBoard(guess, feedback);
+                updateKeyboard(guess, feedback);
+
+                setTimeout(() => {
+                    if (guess === targetWord) {
+                        document.getElementById('message').textContent = 
+                            `Congratulations! You won in ${currentAttempt + 1} attempts!`;
+                        gameOver = true;
+                        document.getElementById('input').disabled = true;
+                    } else if (currentAttempt === MAX_ATTEMPTS - 1) {
+                        document.getElementById('message').textContent = 
+                            `Game Over! The word was: ${targetWord}`;
+                        gameOver = true;
+                        document.getElementById('input').disabled = true;
+                    }
+                    currentAttempt++;
+                    e.target.value = '';
+                }, 700);
+            }
+        });
+
+        startGame();
+    </script>
+</body>
+</html>
