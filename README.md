@@ -40,6 +40,6 @@ This is a single HTML file implementation of a Wordle-like game where players at
 
 1. Download or copy the `wordle.html` file
 2. Open it directly in a web browser
-3. Start playing!
+3. Start playing!!
 
 ## File Structure
